@@ -1,6 +1,11 @@
-[package]
-name = "raft-example-rs"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = [
+    "api",
+    "core",
+    "node",
+    "coordinator",
+]
 
-[dependencies]
+[workspace.dependencies]
+chrono = "0.4.39"
