@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package api;
+
+service Node {
+    rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {}
+}
+
+message GetNodeInfoRequest {
+}
+
+message GetNodeInfoResponse {
+}
