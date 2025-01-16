@@ -4,4 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+api = { path = "../api" }
+
 chrono = {workspace = true}
+tokio = { workspace = true, features = ["full"] }
+tonic = { workspace = true }
+time = "0.3.37"
