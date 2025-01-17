@@ -30,12 +30,13 @@ impl Pinger {
     }
 
     async fn check_node(&self, node: &NodeInfo) -> bool {
+        let address = &node.address;
         let mut connections = self.connections.lock().await;
         let client = connections.get(node.uuid.as_str());
         let client: Arc<Mutex<PingNodeClient<Channel>>> = match client {
             Some(client) => client.clone(),
             None => {
-                let client = PingNodeClient::connect(format!("http://{}:{}", node.host, node.port)).await;
+                let client = PingNodeClient::connect(address.clone()).await;
                 match client {
                     Ok(client) => {
                         let client = Arc::new(Mutex::new(client));

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::repository::{NodeInfo, Repository};
+use crate::repository::{NodeInfo, NodeRole, Repository};
 
 use api::api::coordinator_server::Coordinator;
-use api::api::{GetAllNodesResponseProto, NodeInfoProto, RegisterNodeResponseProto};
+use api::api::{GetAllNodesResponseProto, NodeInfoProto, NodeRoleProto, RegisterNodeResponseProto};
 use api::api::register_node_response_proto::RegisterNodeStatus;
 
 pub(crate) struct CoordinatorServerImpl {
@@ -37,8 +37,8 @@ impl Into<NodeInfo> for NodeInfoProto {
     fn into(self) -> NodeInfo {
         NodeInfo {
             uuid: self.uuid,
-            host: self.host,
-            port: self.port,
+            address: self.address,
+            role: self.role.into(),
         }
     }
 }
@@ -47,8 +47,31 @@ impl Into<NodeInfoProto> for NodeInfo {
     fn into(self) -> NodeInfoProto {
         NodeInfoProto {
             uuid: self.uuid,
-            host: self.host,
-            port: self.port,
+            address: self.address,
+            role: self.role.into(),
         }
+    }
+}
+
+impl Into<NodeRole> for i32 {
+    fn into(self) -> NodeRole {
+        let proto = NodeRoleProto::try_from(self).unwrap_or_default();
+        match proto {
+            NodeRoleProto::NodeRoleFollower => NodeRole::Follower,
+            NodeRoleProto::NodeRoleLeader => NodeRole::Leader,
+            NodeRoleProto::NodeRoleCandidate => NodeRole::Candidate,
+        }
+    }
+}
+
+impl Into<i32> for NodeRole {
+    fn into(self) -> i32 {
+        let proto = match self {
+            NodeRole::Follower => NodeRoleProto::NodeRoleFollower,
+            NodeRole::Leader => NodeRoleProto::NodeRoleLeader,
+            NodeRole::Candidate => NodeRoleProto::NodeRoleCandidate,
+        };
+
+        proto.into()
     }
 }

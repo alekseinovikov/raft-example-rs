@@ -3,10 +3,17 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
+pub(crate) enum NodeRole {
+    Follower,
+    Leader,
+    Candidate,
+}
+
+#[derive(Clone)]
 pub(crate) struct NodeInfo {
     pub(crate) uuid: String,
-    pub(crate) host: String,
-    pub(crate) port: u32,
+    pub(crate) address: String,
+    pub(crate) role: NodeRole,
 }
 
 pub(crate) struct Repository {

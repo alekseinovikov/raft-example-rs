@@ -5,28 +5,34 @@ package api;
 import "google/protobuf/empty.proto";
 
 service Coordinator {
-    rpc RegisterNode(NodeInfoProto) returns (RegisterNodeResponseProto) {}
-    rpc GetAllNodes(google.protobuf.Empty) returns (GetAllNodesResponseProto) {}
+  rpc RegisterNode(NodeInfoProto) returns (RegisterNodeResponseProto) {}
+  rpc GetAllNodes(google.protobuf.Empty) returns (GetAllNodesResponseProto) {}
 }
 
-service PingNode{
-    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+service PingNode {
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}
+
+enum NodeRoleProto {
+  NODE_ROLE_FOLLOWER = 0;
+  NODE_ROLE_LEADER = 1;
+  NODE_ROLE_CANDIDATE = 2;
 }
 
 message NodeInfoProto {
-    string uuid = 1;
-    string host = 2;
-    uint32 port = 3;
+  string uuid = 1;
+  string address = 2;
+  NodeRoleProto role = 3;
 }
 
 message RegisterNodeResponseProto {
-    enum RegisterNodeStatus {
-        SUCCESS = 0;
-        ERROR = 1;
-    }
-    RegisterNodeStatus status = 1;
+  enum RegisterNodeStatus {
+    SUCCESS = 0;
+    ERROR = 1;
+  }
+  RegisterNodeStatus status = 1;
 }
 
 message GetAllNodesResponseProto {
-    repeated NodeInfoProto nodes = 1;
+  repeated NodeInfoProto nodes = 1;
 }
