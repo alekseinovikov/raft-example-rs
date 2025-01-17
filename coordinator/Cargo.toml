@@ -7,8 +7,9 @@ edition = "2021"
 api = { path = "../api" }
 
 chrono = {workspace = true}
+config = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 tokio = { workspace = true, features = ["full"] }
 tonic = { workspace = true }
-time = "0.3.37"
+serde = { workspace = true }

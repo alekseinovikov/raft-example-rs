@@ -26,6 +26,12 @@ impl Coordinator for CoordinatorServerImpl {
         Ok(Response::new(RegisterNodeResponseProto{ status: RegisterNodeStatus::Success.into() }))
     }
 
+    async fn remove_node(&self, request: Request<NodeInfoProto>) -> Result<Response<()>, Status> {
+        let node_info = request.into_inner();
+        self.repository.remove_node(&node_info.uuid).await;
+        Ok(Response::new(()))
+    }
+
     async fn get_all_nodes(&self, _request: Request<()>) -> Result<Response<GetAllNodesResponseProto>, Status> {
         let nodes = self.repository.get_nodes().await;
         let nodes_proto: Vec<NodeInfoProto> = nodes.into_iter().map(|node| node.into()).collect();

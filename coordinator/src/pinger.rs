@@ -25,6 +25,7 @@ impl Pinger {
         for node in all_nodes {
             let ok = self.check_node(&node).await;
             if !ok {
+                info!("Node {} is not reachable", node.uuid);
                 self.remove_node(&node.uuid).await;
             }
         }

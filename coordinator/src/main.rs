@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use crate::server::CoordinatorServerImpl;
 use api::api::coordinator_server::CoordinatorServer;
 use pinger::Pinger;
@@ -11,15 +12,19 @@ use tokio::{task, time};
 use tonic::transport::Server;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
+use crate::config::Config;
 
 mod pinger;
 mod repository;
 mod server;
+mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logger();
-
+    
+    let config = Config::load();
+    
     let repository = Arc::new(Repository::new());
     let pinger = Pinger::new(repository.clone());
     let server = CoordinatorServerImpl::new(repository.clone());
@@ -27,18 +32,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (shutdown_sender, _) = broadcast::channel(2);
     tokio::spawn(handle_shutdown_signal(shutdown_sender.clone()));
 
-    let pinger_handle = start_pinger(pinger, shutdown_sender.clone());
-    start_server_blocking(server, shutdown_sender.clone()).await?;
+    let pinger_handle = start_pinger(&config, pinger, shutdown_sender.clone());
+    start_server_blocking(&config, server, shutdown_sender.clone()).await?;
 
     pinger_handle.await?;
     Ok(())
 }
 
 async fn start_server_blocking(
+    config: &Config,
     server: CoordinatorServerImpl,
     shutdown_sender: Sender<()>
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr: SocketAddr = config.address.parse().unwrap();
     info!("Coordinator listening on {}", addr);
 
     let mut shutdown_receiver = shutdown_sender.subscribe();
@@ -55,8 +61,8 @@ async fn start_server_blocking(
     Ok(())
 }
 
-fn start_pinger(pinger: Pinger, shutdown_sender: Sender<()>) -> JoinHandle<()> {
-    let ping_duration = Duration::from_secs(5);
+fn start_pinger(config: &Config, pinger: Pinger, shutdown_sender: Sender<()>) -> JoinHandle<()> {
+    let ping_duration = Duration::from_secs(config.ping_duration_seconds);
     let mut interval = time::interval(ping_duration);
     let mut shutdown_receiver = shutdown_sender.subscribe();
 

@@ -6,6 +6,7 @@ import "google/protobuf/empty.proto";
 
 service Coordinator {
   rpc RegisterNode(NodeInfoProto) returns (RegisterNodeResponseProto) {}
+  rpc RemoveNode(NodeInfoProto) returns (google.protobuf.Empty) {}
   rpc GetAllNodes(google.protobuf.Empty) returns (GetAllNodesResponseProto) {}
 }
 
