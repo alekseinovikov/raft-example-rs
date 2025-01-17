@@ -4,10 +4,13 @@ use pinger::Pinger;
 use repository::Repository;
 use std::sync::Arc;
 use std::time::Duration;
+use broadcast::Sender;
+use tokio::sync::broadcast;
+use tokio::task::JoinHandle;
 use tokio::{task, time};
 use tonic::transport::Server;
-use tracing_subscriber::FmtSubscriber;
 use tracing::{info, Level};
+use tracing_subscriber::FmtSubscriber;
 
 mod pinger;
 mod repository;
@@ -21,32 +24,67 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pinger = Pinger::new(repository.clone());
     let server = CoordinatorServerImpl::new(repository.clone());
 
-    start_pinger(pinger).await;
-    start_server_blocking(server).await
-}
+    let (shutdown_sender, _) = broadcast::channel(2);
+    tokio::spawn(handle_shutdown_signal(shutdown_sender.clone()));
 
-async fn start_server_blocking(server: CoordinatorServerImpl) -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse().unwrap();
-    info!("Coordinator listening on {}", addr);
+    let pinger_handle = start_pinger(pinger, shutdown_sender.clone());
+    start_server_blocking(server, shutdown_sender.clone()).await?;
 
-    Server::builder()
-        .add_service(CoordinatorServer::new(server))
-        .serve(addr)
-        .await?;
-
+    pinger_handle.await?;
     Ok(())
 }
 
-async fn start_pinger(pinger: Pinger) {
-    let ping_duration = Duration::from_secs(5);
-    task::spawn(async move {
-        let mut interval = time::interval(ping_duration);
+async fn start_server_blocking(
+    server: CoordinatorServerImpl,
+    shutdown_sender: Sender<()>
+) -> Result<(), Box<dyn std::error::Error>> {
+    let addr = "[::1]:50051".parse().unwrap();
+    info!("Coordinator listening on {}", addr);
 
+    let mut shutdown_receiver = shutdown_sender.subscribe();
+
+    Server::builder()
+        .add_service(CoordinatorServer::new(server))
+        .serve_with_shutdown(addr, async {
+            shutdown_receiver.recv().await.ok();
+            info!("Server received shutdown signal");
+        })
+        .await?;
+
+    info!("Server gracefully shut down");
+    Ok(())
+}
+
+fn start_pinger(pinger: Pinger, shutdown_sender: Sender<()>) -> JoinHandle<()> {
+    let ping_duration = Duration::from_secs(5);
+    let mut interval = time::interval(ping_duration);
+    let mut shutdown_receiver = shutdown_sender.subscribe();
+
+    task::spawn(async move {
         loop {
-            interval.tick().await;
-            pinger.check_all().await;
+            tokio::select! {
+                _ = interval.tick() => {
+                    info!("Ping all available nodes");
+                    pinger.check_all().await;
+                },
+                _ = shutdown_receiver.recv() => {
+                    info!("Pinger received shutdown signal");
+                    break;
+                },
+            }
         }
-    });
+
+        info!("Pinger gracefully shut down");
+    })
+}
+
+async fn handle_shutdown_signal(shutdown_sender: Sender<()>) {
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for shutdown signal");
+
+    info!("Shutdown signal received");
+    let _ = shutdown_sender.send(());
 }
 
 fn init_logger() {
@@ -54,6 +92,5 @@ fn init_logger() {
         .with_max_level(Level::INFO)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
