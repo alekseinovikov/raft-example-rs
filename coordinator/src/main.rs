@@ -10,21 +10,20 @@ use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use tokio::{task, time};
 use tonic::transport::Server;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
-use crate::config::Config;
+use tracing::info;
+use common::config::Config;
+use common::{handle_shutdown_signal, init_logger};
 
 mod pinger;
 mod repository;
 mod server;
-mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logger();
-    
+
     let config = Config::load();
-    
+
     let repository = Arc::new(Repository::new());
     let pinger = Pinger::new(repository.clone());
     let server = CoordinatorServerImpl::new(repository.clone());
@@ -44,7 +43,7 @@ async fn start_server_blocking(
     server: CoordinatorServerImpl,
     shutdown_sender: Sender<()>
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let addr: SocketAddr = config.address.parse().unwrap();
+    let addr: SocketAddr = config.coordinator_address.parse().unwrap();
     info!("Coordinator listening on {}", addr);
 
     let mut shutdown_receiver = shutdown_sender.subscribe();
@@ -82,21 +81,4 @@ fn start_pinger(config: &Config, pinger: Pinger, shutdown_sender: Sender<()>) ->
 
         info!("Pinger gracefully shut down");
     })
-}
-
-async fn handle_shutdown_signal(shutdown_sender: Sender<()>) {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to listen for shutdown signal");
-
-    info!("Shutdown signal received");
-    let _ = shutdown_sender.send(());
-}
-
-fn init_logger() {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }

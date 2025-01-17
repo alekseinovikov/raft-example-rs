@@ -2,20 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
-
-#[derive(Clone, Debug)]
-pub(crate) enum NodeRole {
-    Follower,
-    Leader,
-    Candidate,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct NodeInfo {
-    pub(crate) uuid: String,
-    pub(crate) address: String,
-    pub(crate) role: NodeRole,
-}
+use common::NodeInfo;
 
 pub(crate) struct Repository {
     nodes: Arc<Mutex<HashMap<String, NodeInfo>>>,

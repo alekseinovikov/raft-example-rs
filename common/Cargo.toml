@@ -1,0 +1,15 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+api = { path = "../api" }
+
+serde = { workspace = true }
+config = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+portpicker = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+uuid = { workspace = true }

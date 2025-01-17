@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+common = { path = "../common" }
 api = { path = "../api" }
 
-chrono = {workspace = true}
+tracing = {workspace = true}
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
 tonic = { workspace = true }
-portpicker = { workspace = true }

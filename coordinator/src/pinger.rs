@@ -4,8 +4,9 @@ use tokio::sync::Mutex;
 use tonic::transport;
 use tracing::info;
 use transport::Channel;
-use crate::repository::{NodeInfo, Repository};
+use crate::repository::Repository;
 use api::api::ping_node_client::PingNodeClient;
+use common::NodeInfo;
 
 pub(crate) struct Pinger {
     repository: Arc<Repository>,
