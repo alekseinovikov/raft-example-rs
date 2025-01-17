@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport;
+use tracing::info;
 use transport::Channel;
 use crate::repository::{NodeInfo, Repository};
 use api::api::ping_node_client::PingNodeClient;
@@ -51,7 +52,7 @@ impl Pinger {
         let mut client = client.lock().await;
         let response = client.ping(()).await;
 
-        println!("Ping response: {:?} from {}", response, node.uuid);
+        info!("Ping response: {:?} from {}", response, node.uuid);
 
         response.is_ok()
     }

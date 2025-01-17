@@ -9,6 +9,8 @@ members = [
 
 [workspace.dependencies]
 chrono = "0.4.39"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 tokio = { version = "1.43.0", features = ["full"] }
 protoc-bin-vendored = "3.1.0"
 prost = "0.13.4"
