@@ -13,7 +13,7 @@ impl PingServerImpl {
 
 #[tonic::async_trait]
 impl PingNode for PingServerImpl {
-    async fn ping(&self, request: Request<()>) -> Result<Response<()>, Status> {
+    async fn ping(&self, _request: Request<()>) -> Result<Response<()>, Status> {
         Ok(Response::new(()))
     }
 }

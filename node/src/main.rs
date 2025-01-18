@@ -1,12 +1,15 @@
-use std::net::SocketAddr;
-use tokio::sync::broadcast::Sender;
-use tonic::transport::Server;
-use tracing::info;
-use common::config::Config;
-use common::{handle_shutdown_signal, init_logger, NodeInfo};
 use crate::coordinator::Coordinator;
 use crate::ping::PingServerImpl;
-use api::api::ping_node_server::{PingNode, PingNodeServer};
+use api::api::ping_node_server::PingNodeServer;
+use common::config::Config;
+use common::{handle_shutdown_signal, init_logger, NodeInfo};
+use std::net::SocketAddr;
+use std::time::Duration;
+use tokio::sync::broadcast::Sender;
+use tokio::{task, time};
+use tokio::task::JoinHandle;
+use tonic::transport::Server;
+use tracing::info;
 
 mod coordinator;
 mod ping;
@@ -24,15 +27,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let coordinator = Coordinator::new(&config, node_info).await?;
     let ping_server = PingServerImpl::new();
 
+    let coordinator_handler = start_coordination_job(&config, coordinator, shutdown_sender.clone()).await;
+    start_servers_blocking(&config, ping_server, shutdown_sender).await?;
+
+    coordinator_handler.await?;
     Ok(())
 }
 
 async fn start_servers_blocking(
     config: &Config,
     ping_server: PingServerImpl,
-    shutdown_sender: Sender<()>
-) -> Result<(), Box<dyn std::error::Error>>{
-    let addr: SocketAddr = config.address.clone().parse().unwrap();
+    shutdown_sender: Sender<()>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let address_string = format!("{}:{}", config.host, config.port);
+    let addr: SocketAddr = address_string.parse().unwrap();
     info!("Node listening on {}", addr);
 
     let mut shutdown_receiver = shutdown_sender.subscribe();
@@ -47,4 +55,32 @@ async fn start_servers_blocking(
 
     info!("Server gracefully shut down");
     Ok(())
+}
+
+async fn start_coordination_job(
+    config: &Config,
+    mut coordinator: Coordinator,
+    shutdown_sender: Sender<()>
+) -> JoinHandle<()> {
+    let self_register_duration = Duration::from_secs(config.self_register_duration_seconds);
+    let mut interval = time::interval(self_register_duration);
+    let mut shutdown_receiver = shutdown_sender.subscribe();
+
+    task::spawn(async move {
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    info!("Register self into coordinator");
+                    coordinator.register_self().await;
+                },
+                _ = shutdown_receiver.recv() => {
+                    coordinator.remove_self().await;
+                    info!("Node received shutdown signal");
+                    break;
+                },
+            }
+        }
+
+        info!("Coordinator gracefully shut down");
+    })
 }

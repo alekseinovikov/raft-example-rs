@@ -43,7 +43,8 @@ async fn start_server_blocking(
     server: CoordinatorServerImpl,
     shutdown_sender: Sender<()>
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let addr: SocketAddr = config.coordinator_address.parse().unwrap();
+    let address_string = format!("{}:{}", config.host, config.coordinator_port);
+    let addr: SocketAddr = address_string.parse().unwrap();
     info!("Coordinator listening on {}", addr);
 
     let mut shutdown_receiver = shutdown_sender.subscribe();

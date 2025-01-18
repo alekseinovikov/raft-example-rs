@@ -33,7 +33,7 @@ impl Pinger {
     }
 
     async fn check_node(&self, node: &NodeInfo) -> bool {
-        let address = &node.address;
+        let address = format!("http://{}:{}", node.host, node.port);
         let mut connections = self.connections.lock().await;
         let client = connections.get(node.uuid.as_str());
         let client: Arc<Mutex<PingNodeClient<Channel>>> = match client {

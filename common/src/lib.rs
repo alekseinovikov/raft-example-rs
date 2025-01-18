@@ -2,7 +2,6 @@ use tokio::sync::broadcast::Sender;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 use api::api::{NodeInfoProto, NodeRoleProto};
-use uuid::Uuid;
 use config::Config;
 
 pub mod config;
@@ -17,7 +16,8 @@ pub enum NodeRole {
 #[derive(Clone, Debug)]
 pub struct NodeInfo {
     pub uuid: String,
-    pub address: String,
+    pub host: String,
+    pub port: String,
     pub role: NodeRole,
 }
 
@@ -25,7 +25,8 @@ impl NodeInfo {
     pub fn from(config: &Config) -> Self {
         NodeInfo {
             uuid: config.uuid.clone(),
-            address: config.address.clone(),
+            host: config.host.clone(),
+            port: config.port.clone(),
             role: NodeRole::Follower,
         }
     }
@@ -35,7 +36,8 @@ impl Into<NodeInfo> for NodeInfoProto {
     fn into(self) -> NodeInfo {
         NodeInfo {
             uuid: self.uuid,
-            address: self.address,
+            host: self.host,
+            port: self.port,
             role: self.role.into(),
         }
     }
@@ -45,7 +47,8 @@ impl Into<NodeInfoProto> for NodeInfo {
     fn into(self) -> NodeInfoProto {
         NodeInfoProto {
             uuid: self.uuid,
-            address: self.address,
+            host: self.host,
+            port: self.port,
             role: self.role.into(),
         }
     }

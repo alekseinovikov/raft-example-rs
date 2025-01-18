@@ -22,8 +22,9 @@ enum NodeRoleProto {
 
 message NodeInfoProto {
   string uuid = 1;
-  string address = 2;
-  NodeRoleProto role = 3;
+  string host = 2;
+  string port = 3;
+  NodeRoleProto role = 4;
 }
 
 message RegisterNodeResponseProto {
